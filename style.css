@@ -326,21 +326,40 @@ input:focus {
 
 /* Map Popups - Glass Style */
 .leaflet-popup-content-wrapper {
-  background: rgba(15, 15, 20, 0.9) !important;
+  background: rgba(15, 15, 20, 0.95) !important;
   backdrop-filter: blur(16px) !important;
   border-radius: 16px !important;
   color: white !important;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5) !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
   padding: 0 !important;
 }
 
 .leaflet-popup-tip {
-  background: rgba(15, 15, 20, 0.9) !important;
+  background: rgba(15, 15, 20, 0.95) !important;
 }
 
 .leaflet-popup-content {
-  margin: 1rem !important;
+  margin: 1.2rem !important;
+  line-height: 1.5;
+}
+
+.leaflet-popup-content h3 {
+  color: #ffffff !important;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  font-size: 1.1rem;
+}
+
+.leaflet-popup-content div {
+  color: #e2e8f0 !important;
+  /* Light grey for body text */
+}
+
+.leaflet-container a.leaflet-popup-close-button {
+  color: #ffffff !important;
+  font-size: 1.2rem !important;
+  padding: 8px !important;
 }
 
 /* Responsive Mobile "Drawer" */

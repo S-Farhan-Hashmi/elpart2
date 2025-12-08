@@ -869,10 +869,10 @@ async function calculateRouteToStation(station, stationMarker) {
             if (routeInfoEl) {
                 routeInfoEl.style.display = 'block';
                 routeInfoEl.innerHTML = `
-          <div style="padding: 0.5rem; background: #f3f4f6; border-radius: 6px;">
-            <div style="font-weight: 600; margin-bottom: 0.3rem; color: #111;">Route Information:</div>
-            <div>Distance: <strong>${distanceMiles} mi</strong> (${distanceKm} km)</div>
-            <div>Estimated Time: <strong>${timeString}</strong></div>
+          <div style="padding: 0.6rem; background: rgba(255, 255, 255, 0.05); border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.1);">
+            <div style="font-weight: 600; margin-bottom: 0.3rem; color: #fff;">Route Information:</div>
+            <div style="color: #cbd5e1;">Distance: <strong style="color: #fff;">${distanceMiles} mi</strong> (${distanceKm} km)</div>
+            <div style="color: #cbd5e1;">Estimated Time: <strong style="color: #fff;">${timeString}</strong></div>
           </div>
         `;
             }
@@ -927,10 +927,10 @@ async function calculateRouteToFirebaseStation(stationId, stationMarker) {
             if (routeInfoEl) {
                 routeInfoEl.style.display = 'block';
                 routeInfoEl.innerHTML = `
-          <div style="padding: 0.5rem; background: #f3f4f6; border-radius: 6px;">
-            <div style="font-weight: 600; margin-bottom: 0.3rem; color: #111;">Route Information:</div>
-            <div>Distance: <strong>${distanceMiles} mi</strong> (${distanceKm} km)</div>
-            <div>Estimated Time: <strong>${timeString}</strong></div>
+          <div style="padding: 0.6rem; background: rgba(255, 255, 255, 0.05); border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.1);">
+            <div style="font-weight: 600; margin-bottom: 0.3rem; color: #fff;">Route Information:</div>
+            <div style="color: #cbd5e1;">Distance: <strong style="color: #fff;">${distanceMiles} mi</strong> (${distanceKm} km)</div>
+            <div style="color: #cbd5e1;">Estimated Time: <strong style="color: #fff;">${timeString}</strong></div>
           </div>
         `;
             }
