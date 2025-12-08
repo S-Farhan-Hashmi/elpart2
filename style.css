@@ -6,7 +6,7 @@
 
 :root {
   --bg-color: #050505;
-  --panel-bg: rgba(10, 10, 12, 0.65);
+  --panel-bg: rgba(10, 10, 12, 0.85);
   /* Ultra glass */
   --panel-border: rgba(255, 255, 255, 0.08);
   --text-primary: #ffffff;
