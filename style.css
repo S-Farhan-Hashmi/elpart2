@@ -5,20 +5,22 @@
 */
 
 :root {
-  --bg-color: #050505;
-  --panel-bg: rgba(10, 10, 12, 0.65);
-  /* Ultra glass */
-  --panel-border: rgba(255, 255, 255, 0.08);
+  --bg-color: #000000;
+  --panel-bg: rgba(0, 0, 0, 0.85);
+  /* Deep Dark Glass */
+  --panel-border: rgba(255, 255, 255, 0.1);
   --text-primary: #ffffff;
-  --text-secondary: #94a3b8;
+  --text-secondary: #e5e7eb;
+  /* Lighter secondary for contrast */
   --accent-primary: #06b6d4;
-  /* Cyan */
   --accent-secondary: #8b5cf6;
-  /* Violet */
   --accent-gradient: linear-gradient(135deg, #06b6d4, #8b5cf6);
   --danger: #f43f5e;
   --success: #10b981;
   --font-family: 'Inter', system-ui, -apple-system, sans-serif;
+
+  /* Animation Speeds */
+  --float-speed: 6s;
 }
 
 * {
@@ -61,7 +63,7 @@ body {
   background: radial-gradient(circle at center, transparent 60%, rgba(5, 5, 5, 0.4) 100%);
 }
 
-/* Fixed Sidebar Controls (Replaces Floating Panel) */
+/* Fixed Sidebar Controls */
 .sidebar-controls {
   position: fixed;
   top: 0;
@@ -69,17 +71,14 @@ body {
   bottom: 0;
   width: 400px;
   height: 100vh;
-
   background: var(--panel-bg);
   backdrop-filter: blur(24px) saturate(180%);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
   border-right: 1px solid var(--panel-border);
-
   padding: 2.5rem 2rem;
   z-index: 1000;
   box-shadow: 10px 0 50px rgba(0, 0, 0, 0.3);
   overflow-y: auto;
-
   display: flex;
   flex-direction: column;
   gap: 2rem;
@@ -99,7 +98,6 @@ body {
   letter-spacing: -0.04em;
   background: var(--accent-gradient);
   -webkit-background-clip: text;
-  background-clip: text;
   -webkit-text-fill-color: transparent;
   margin-bottom: 0.2rem;
 
@@ -226,7 +224,7 @@ input:focus {
   gap: 0.6rem;
   transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
   box-shadow: 0 10px 30px rgba(139, 92, 246, 0.4);
-  margin-top: 5px;
+  margin-top: 0.5rem;
 }
 
 @keyframes gradientFlow {
@@ -347,14 +345,16 @@ input:focus {
     left: 0;
     width: 100%;
     height: auto;
-    max-height: 70vh;
+    max-height: 85vh;
+    /* Increase height for mobile ease */
     border-radius: 32px 32px 0 0;
     padding: 1.5rem;
     padding-bottom: 2rem;
-    /* Safe area */
+    padding-bottom: env(safe-area-inset-bottom, 2rem);
     border-right: none;
     border-top: 1px solid var(--panel-border);
     animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.3);
   }
 
   @keyframes slideUp {
