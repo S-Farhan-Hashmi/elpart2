@@ -1622,11 +1622,90 @@ class Chatbot {
     }
 }
 
-// Initialize chatbot when DOM is ready
+// ========= BOOKING WIDGET =========
+function initBookingWidget() {
+    const bookBtn = document.getElementById('bookSlotBtn');
+    const modal = document.getElementById('bookingModal');
+    const closeBtn = document.getElementById('closeModalBtn');
+    const qrImage = document.getElementById('qrImage');
+    const timerDisplay = document.getElementById('bookingTimer');
+    let timerInterval;
+
+    if (!bookBtn || !modal || !closeBtn) return;
+
+    function startTimer(duration) {
+        let timer = duration, minutes, seconds;
+
+        // Clear existing timer if any
+        if (timerInterval) clearInterval(timerInterval);
+
+        // Initial set
+        updateDisplay();
+
+        timerInterval = setInterval(() => {
+            timer--;
+
+            if (timer < 0) {
+                clearInterval(timerInterval);
+                timerDisplay.textContent = "EXPIRED";
+                timerDisplay.style.color = "var(--danger)";
+                return;
+            }
+
+            updateDisplay();
+        }, 1000);
+
+        function updateDisplay() {
+            minutes = parseInt(timer / 60, 10);
+            seconds = parseInt(timer % 60, 10);
+
+            minutes = minutes < 10 ? "0" + minutes : minutes;
+            seconds = seconds < 10 ? "0" + seconds : seconds;
+
+            timerDisplay.textContent = minutes + ":" + seconds;
+
+            // Warning color for last minute
+            if (timer < 60) {
+                timerDisplay.style.color = "#fbbf24"; // Amber
+            } else {
+                timerDisplay.style.color = "var(--accent-primary)";
+            }
+        }
+    }
+
+    function openModal() {
+        modal.classList.add('active');
+
+        // Generate random session ID for QR
+        const sessionId = Math.random().toString(36).substring(2, 10).toUpperCase();
+        const qrData = `CHARGE-FLOW-SECURE-${sessionId}`;
+        qrImage.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${qrData}`;
+
+        // Start 5 minute timer (300 seconds)
+        startTimer(300);
+    }
+
+    function closeModal() {
+        modal.classList.remove('active');
+        if (timerInterval) clearInterval(timerInterval);
+    }
+
+    bookBtn.addEventListener('click', openModal);
+    closeBtn.addEventListener('click', closeModal);
+
+    // Close on backdrop click
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeModal();
+    });
+}
+
+// Initialize when DOM is ready
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
         new Chatbot();
+        initBookingWidget();
     });
 } else {
     new Chatbot();
+    initBookingWidget();
 }

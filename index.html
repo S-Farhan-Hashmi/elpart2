@@ -76,6 +76,10 @@
             <span>⚡ Initiate Flow</span>
         </button>
 
+        <button id="bookSlotBtn" class="secondary-btn">
+            <span>🔒 Book Slot</span>
+        </button>
+
         <div class="status-area">
             <div id="status" class="status-msg">
                 Syncing with satellite...
@@ -94,7 +98,30 @@
         </div>
     </aside>
 
-    <!-- Support Chatbot Widget -->
+    <!-- Booking Modal -->
+    <div id="bookingModal" class="modal-backdrop">
+        <div class="modal-content">
+            <button class="modal-close" id="closeModalBtn">&times;</button>
+            <div class="modal-header">
+                <h2>Secure Connector Access</h2>
+                <p>Scan to unlock charging point</p>
+            </div>
+
+            <div class="qr-container">
+                <img id="qrImage" src="" alt="Secure QR Code" />
+                <div class="scan-line"></div>
+            </div>
+
+            <div class="timer-display">
+                <span class="timer-label">Session expires in</span>
+                <div id="bookingTimer" class="timer-value">05:00</div>
+            </div>
+
+            <p class="modal-instruction">Use your EV Provider App to scan</p>
+        </div>
+    </div>
+
+    <!-- Charge Flow Support Chatbot Widget -->
     <div class="chat-widget">
         <!-- Chat Toggle Button -->
         <button class="chat-toggle-btn" id="chatToggleBtn" aria-label="Open chat support">
