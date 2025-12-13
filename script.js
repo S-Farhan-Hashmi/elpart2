@@ -60,7 +60,10 @@ function initializeFirebase() {
             setupLocationListener();
         }, 1000);
 
-        // Load stations from Firebase after initialization
+        // Initialize global status tracker
+        window.siteStationStatuses = {};
+
+        // Loop to check if firebase is ready
         setTimeout(() => {
             loadStationsFromFirebase();
         }, 1500);
@@ -219,6 +222,14 @@ function createOrUpdateStationMarker(station, stationId, markerMap) {
         markerMap[stationId] = marker;
         console.log(`✓ Created marker for station ${stationId} - Status: ${status}`);
     }
+
+    // Update global status for Chatbot usage
+    if (!window.siteStationStatuses) window.siteStationStatuses = {};
+    window.siteStationStatuses[stationId] = {
+        title: info.Title || `Station ${stationId}`,
+        status: status,
+        color: status === 'Available' ? 'Green' : 'Red'
+    };
 
     return marker;
 }
@@ -1186,7 +1197,7 @@ class Chatbot {
 
         const questions = [
             'Check Slot Availability',
-            'Current Solar Tariff',
+            'Battery Health Tips',
             'Report a Fault'
         ];
 
@@ -1232,11 +1243,11 @@ class Chatbot {
             let response = '';
 
             if (question === 'Check Slot Availability') {
-                response = 'Slot 1 & 2 are currently Available (Solar Powered). ☀️ Both slots support fast charging up to 150kW!';
-            } else if (question === 'Current Solar Tariff') {
-                response = 'Current solar-powered charging rate: $0.15/kWh during peak hours (6am-10pm) and $0.08/kWh during off-peak hours. 🌞 100% renewable energy!';
+                response = this.getSlotAvailabilityResponse();
+            } else if (question === 'Battery Health Tips') {
+                response = 'To extend battery life: Avoid charging to 100% daily (80% is sweet spot), limit DC fast charging use, and try to park in the shade on hot days! 🔋';
             } else if (question === 'Report a Fault') {
-                response = 'I\'m sorry to hear you\'ve encountered an issue. Please describe the problem and I\'ll forward it to our maintenance team immediately. You can also call our 24/7 support line at 1-800-CHARGE-FLOW.';
+                response = 'I\'m sorry to hear you\'ve encountered an issue. Please describe the problem and I\'ll forward it to our maintenance team immediately. You can also call our 24/7 support line at +91 98765 43210.';
             }
 
             this.addBotMessage(response);
@@ -1269,7 +1280,9 @@ class Chatbot {
         setTimeout(() => {
             this.hideTypingIndicator();
             const response = this.generateResponse(message);
-            this.addBotMessage(response);
+            if (response) {
+                this.addBotMessage(response);
+            }
 
             // Show quick questions again
             this.quickQuestionsShown = false;
@@ -1282,12 +1295,16 @@ class Chatbot {
     generateResponse(message) {
         const lowerMessage = message.toLowerCase();
 
-        if (lowerMessage.includes('slot') || lowerMessage.includes('availab')) {
-            return 'Slot 1 & 2 are currently Available (Solar Powered). ☀️ Both slots support fast charging up to 150kW!';
-        } else if (lowerMessage.includes('tariff') || lowerMessage.includes('price') || lowerMessage.includes('cost')) {
-            return 'Current solar-powered charging rate: $0.15/kWh during peak hours (6am-10pm) and $0.08/kWh during off-peak hours. 🌞 100% renewable energy!';
+        if (lowerMessage.includes('find charger') || lowerMessage.includes('find station') || lowerMessage.includes('nearby')) {
+            // Trigger the find chargers workflow
+            this.handleFindChargers();
+            return null; // Return null to indicate async handling (no immediate text response needed)
+        } else if (lowerMessage.includes('slot') || lowerMessage.includes('availab')) {
+            return this.getSlotAvailabilityResponse();
+        } else if (lowerMessage.includes('battery') || lowerMessage.includes('tip') || lowerMessage.includes('health') || lowerMessage.includes('life')) {
+            return 'To extend battery life: Avoid charging to 100% daily (80% is sweet spot), limit DC fast charging use, and try to park in the shade on hot days! 🔋';
         } else if (lowerMessage.includes('fault') || lowerMessage.includes('problem') || lowerMessage.includes('issue') || lowerMessage.includes('broken')) {
-            return 'I\'m sorry to hear about the issue. Please describe the problem in detail and I\'ll escalate it to our technical team. For urgent matters, call 1-800-CHARGE-FLOW.';
+            return 'I\'m sorry to hear about the issue. Please describe the problem in detail and I\'ll escalate it to our technical team. For urgent matters, call +91 98765 43210.';
         } else if (lowerMessage.includes('help') || lowerMessage.includes('support')) {
             return 'I\'m here to help! You can ask me about slot availability, charging tariffs, or report any faults. What would you like to know?';
         } else if (lowerMessage.includes('hour') || lowerMessage.includes('time') || lowerMessage.includes('open')) {
@@ -1299,6 +1316,201 @@ class Chatbot {
         } else {
             return 'I understand you\'re asking about "' + message + '". For detailed assistance, please contact our support team at support@chargeflow.com or try one of the quick questions above!';
         }
+    }
+
+    async handleFindChargers() {
+        this.addBotMessage("Sure! Accessing satellite positioning to find chargers near you...");
+        this.showTypingIndicator();
+
+        if (!navigator.geolocation) {
+            this.hideTypingIndicator();
+            this.addBotMessage("Geolocation is not supported by your browser. Please ensure location services are enabled.");
+            return;
+        }
+
+        navigator.geolocation.getCurrentPosition(
+            async (position) => {
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+                const distanceMiles = 5; // Search radius
+
+                try {
+                    // Use existing fetchChargingStations function
+                    const stations = await fetchChargingStations(lat, lng, distanceMiles);
+                    this.hideTypingIndicator();
+
+                    if (stations && stations.length > 0) {
+                        const topStations = stations.slice(0, 3);
+                        this.addBotMessage(`Found ${stations.length} chargers nearby coverage. Here are the top 3 closest to you:`);
+                        this.addBotStationOptions(topStations);
+                    } else {
+                        this.addBotMessage("No charging stations found within 5 miles. Try increasing your range or checking network connection.");
+                    }
+
+                } catch (error) {
+                    this.hideTypingIndicator();
+                    console.error("Chatbot Error:", error);
+                    this.addBotMessage("I encountered an error while fetching station data. Please try again later.");
+                }
+            },
+            (error) => {
+                this.hideTypingIndicator();
+                console.warn("Chatbot Location Error:", error);
+                this.addBotMessage("I couldn't access your location. Please check your browser permissions.");
+            }
+        );
+    }
+
+    addBotStationOptions(stations) {
+        const messageEl = document.createElement('div');
+        messageEl.className = 'chat-message';
+
+        const avatar = document.createElement('div');
+        avatar.className = 'message-avatar';
+        // Same avatar SVG
+        avatar.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="11" width="18" height="10" rx="2"></rect>
+                <circle cx="12" cy="5" r="2"></circle>
+                <path d="M12 7v4"></path>
+                <line x1="8" y1="16" x2="8" y2="16"></line>
+                <line x1="16" y1="16" x2="16" y2="16"></line>
+            </svg>
+        `;
+
+        const messageContent = document.createElement('div');
+        messageContent.className = 'message-content';
+
+        const bubble = document.createElement('div');
+        bubble.className = 'message-bubble';
+        bubble.style.background = 'transparent';
+        bubble.style.border = 'none';
+        bubble.style.padding = '0';
+        bubble.style.display = 'flex';
+        bubble.style.flexDirection = 'column';
+        bubble.style.gap = '0.5rem';
+
+        stations.forEach(station => {
+            const btn = document.createElement('button');
+            const title = station.AddressInfo.Title || "Unknown Station";
+            const distance = station.AddressInfo.Distance ? `${station.AddressInfo.Distance.toFixed(1)} mi` : "N/A";
+
+            btn.style.background = 'rgba(255, 255, 255, 0.08)';
+            btn.style.border = '1px solid rgba(6, 182, 212, 0.3)';
+            btn.style.borderRadius = '12px';
+            btn.style.padding = '0.8rem';
+            btn.style.color = '#fff';
+            btn.style.textAlign = 'left';
+            btn.style.cursor = 'pointer';
+            btn.style.transition = 'all 0.2s ease';
+            btn.style.display = 'flex';
+            btn.style.justifyContent = 'space-between';
+            btn.style.alignItems = 'center';
+            btn.style.width = '100%';
+
+            btn.innerHTML = `
+                <div style="display: flex; flex-direction: column;">
+                    <span style="font-weight: 600; font-size: 0.9rem;">${title}</span>
+                    <span style="font-size: 0.75rem; color: #94a3b8;">${distance} away</span>
+                </div>
+                <div style="background: rgba(6, 182, 212, 0.2); border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2">
+                        <path d="M5 12h14M12 5l7 7-7 7"/>
+                    </svg>
+                </div>
+            `;
+
+            btn.onmouseover = () => {
+                btn.style.background = 'rgba(6, 182, 212, 0.15)';
+                btn.style.transform = 'translateY(-2px)';
+            };
+            btn.onmouseout = () => {
+                btn.style.background = 'rgba(255, 255, 255, 0.08)';
+                btn.style.transform = 'translateY(0)';
+            };
+
+            btn.onclick = () => this.handleRouteRequest(station);
+
+            bubble.appendChild(btn);
+        });
+
+        messageContent.appendChild(bubble);
+        messageEl.appendChild(avatar);
+        messageEl.appendChild(messageContent);
+
+        this.chatBody.appendChild(messageEl);
+        this.scrollToBottom();
+    }
+
+    async handleRouteRequest(station) {
+        this.addBotMessage(`Calculating route to <strong>${station.AddressInfo.Title}</strong>...`);
+        this.showTypingIndicator();
+
+        // Ensure we have user location
+        if (!userMarker) {
+            // Try to mock or get it again if missing, but for now rely on existing global
+            this.hideTypingIndicator();
+            this.addBotMessage("I need to know your location first. Please make sure location is enabled.");
+            return;
+        }
+
+        const userLat = userMarker.getLatLng().lat;
+        const userLng = userMarker.getLatLng().lng;
+        const destLat = station.AddressInfo.Latitude;
+        const destLng = station.AddressInfo.Longitude;
+
+        try {
+            // Use existing fetchRouteFromGraphHopper
+            const routeData = await fetchRouteFromGraphHopper(userLat, userLng, destLat, destLng);
+            this.hideTypingIndicator();
+
+            if (routeData && routeData.paths && routeData.paths.length > 0) {
+                const path = routeData.paths[0];
+                const points = path.points;
+
+                // Draw on main map
+                drawRoute(points);
+
+                // Calculate time/dist
+                const distMi = (path.distance / 1609.34).toFixed(1);
+                const timeMin = Math.round(path.time / 60000);
+
+                this.addBotMessage(`Route confirmed! 🛣️ <br>Distance: <strong>${distMi} miles</strong><br>Est. Time: <strong>${timeMin} mins</strong><br>Follow the blue line on the map.`);
+
+                // Close chat on mobile to show map, or just let user see
+                if (window.innerWidth < 768) {
+                    setTimeout(() => this.toggleChat(), 1500);
+                }
+
+            } else {
+                this.addBotMessage("Sorry, I couldn't find a valid route to that station.");
+            }
+        } catch (error) {
+            this.hideTypingIndicator();
+            console.error("Routing Error:", error);
+            this.addBotMessage("Navigation systems are offline. Please try again.");
+        }
+    }
+
+    getSlotAvailabilityResponse() {
+        if (!window.siteStationStatuses || Object.keys(window.siteStationStatuses).length === 0) {
+            return 'I am currently unable to fetch live status from the site. Please check back in a moment! 📡';
+        }
+
+        let response = 'Here is the live status of our charging slots:<br><br>';
+        let count = 0;
+
+        for (const [id, info] of Object.entries(window.siteStationStatuses)) {
+            const isAvailable = info.status === 'Available';
+            const statusIcon = isAvailable ? '✅' : '❌';
+            const colorDot = isAvailable ? '🟢' : '🔴';
+            const statusText = isAvailable ? 'Available' : 'Unavailable';
+
+            response += `${colorDot} <strong>${info.title}</strong>: ${statusText} ${statusIcon}<br>`;
+            count++;
+        }
+
+        return response;
     }
 
     addBotMessage(text) {
@@ -1322,7 +1534,7 @@ class Chatbot {
 
         const bubble = document.createElement('div');
         bubble.className = 'message-bubble';
-        bubble.textContent = text;
+        bubble.innerHTML = text; // Changed to innerHTML to support bolding
 
         messageContent.appendChild(bubble);
         messageEl.appendChild(avatar);
