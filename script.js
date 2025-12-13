@@ -1123,3 +1123,298 @@ if (document.readyState === 'loading') {
         initializeFirebase();
     }, 300);
 }
+
+// ========= CHATBOT FUNCTIONALITY =========
+class Chatbot {
+    constructor() {
+        this.chatWindow = document.getElementById('chatWindow');
+        this.chatToggleBtn = document.getElementById('chatToggleBtn');
+        this.chatBody = document.getElementById('chatBody');
+        this.chatInput = document.getElementById('chatInput');
+        this.chatSendBtn = document.getElementById('chatSendBtn');
+        this.isOpen = false;
+        this.quickQuestionsShown = false;
+
+        this.init();
+    }
+
+    init() {
+        // Toggle chat window
+        this.chatToggleBtn.addEventListener('click', () => this.toggleChat());
+
+        // Send message on button click
+        this.chatSendBtn.addEventListener('click', () => this.sendMessage());
+
+        // Send message on Enter key
+        this.chatInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                this.sendMessage();
+            }
+        });
+
+        // Show welcome message after a brief delay
+        setTimeout(() => {
+            this.showWelcomeMessage();
+        }, 500);
+    }
+
+    toggleChat() {
+        this.isOpen = !this.isOpen;
+        this.chatWindow.classList.toggle('active', this.isOpen);
+        this.chatToggleBtn.classList.toggle('active', this.isOpen);
+
+        if (this.isOpen && this.chatBody.children.length === 0) {
+            this.showWelcomeMessage();
+        }
+    }
+
+    showWelcomeMessage() {
+        const welcomeText = 'Welcome to Charge Flow! How can I help you with your EV charging?';
+        this.addBotMessage(welcomeText);
+
+        // Show quick questions after welcome message
+        setTimeout(() => {
+            this.showQuickQuestions();
+        }, 600);
+    }
+
+    showQuickQuestions() {
+        if (this.quickQuestionsShown) return;
+
+        const questionsContainer = document.createElement('div');
+        questionsContainer.className = 'quick-questions';
+
+        const questions = [
+            'Check Slot Availability',
+            'Current Solar Tariff',
+            'Report a Fault'
+        ];
+
+        questions.forEach(question => {
+            const chip = document.createElement('button');
+            chip.className = 'quick-question-chip';
+            chip.textContent = question;
+            chip.addEventListener('click', () => this.handleQuickQuestion(question));
+            questionsContainer.appendChild(chip);
+        });
+
+        const messageContainer = document.createElement('div');
+        messageContainer.className = 'chat-message';
+
+        const messageContent = document.createElement('div');
+        messageContent.className = 'message-content';
+        messageContent.appendChild(questionsContainer);
+
+        messageContainer.appendChild(messageContent);
+        this.chatBody.appendChild(messageContainer);
+        this.scrollToBottom();
+
+        this.quickQuestionsShown = true;
+    }
+
+    handleQuickQuestion(question) {
+        // Add user message
+        this.addUserMessage(question);
+
+        // Remove quick questions
+        const quickQuestions = this.chatBody.querySelector('.quick-questions');
+        if (quickQuestions) {
+            quickQuestions.closest('.chat-message').remove();
+        }
+
+        // Show typing indicator
+        this.showTypingIndicator();
+
+        // Generate response based on question
+        setTimeout(() => {
+            this.hideTypingIndicator();
+
+            let response = '';
+
+            if (question === 'Check Slot Availability') {
+                response = 'Slot 1 & 2 are currently Available (Solar Powered). ☀️ Both slots support fast charging up to 150kW!';
+            } else if (question === 'Current Solar Tariff') {
+                response = 'Current solar-powered charging rate: $0.15/kWh during peak hours (6am-10pm) and $0.08/kWh during off-peak hours. 🌞 100% renewable energy!';
+            } else if (question === 'Report a Fault') {
+                response = 'I\'m sorry to hear you\'ve encountered an issue. Please describe the problem and I\'ll forward it to our maintenance team immediately. You can also call our 24/7 support line at 1-800-CHARGE-FLOW.';
+            }
+
+            this.addBotMessage(response);
+
+            // Show quick questions again
+            this.quickQuestionsShown = false;
+            setTimeout(() => {
+                this.showQuickQuestions();
+            }, 800);
+        }, 1200);
+    }
+
+    sendMessage() {
+        const message = this.chatInput.value.trim();
+        if (!message) return;
+
+        this.addUserMessage(message);
+        this.chatInput.value = '';
+
+        // Remove quick questions if present
+        const quickQuestions = this.chatBody.querySelector('.quick-questions');
+        if (quickQuestions) {
+            quickQuestions.closest('.chat-message').remove();
+        }
+
+        // Show typing indicator
+        this.showTypingIndicator();
+
+        // Generate bot response
+        setTimeout(() => {
+            this.hideTypingIndicator();
+            const response = this.generateResponse(message);
+            this.addBotMessage(response);
+
+            // Show quick questions again
+            this.quickQuestionsShown = false;
+            setTimeout(() => {
+                this.showQuickQuestions();
+            }, 800);
+        }, 1000);
+    }
+
+    generateResponse(message) {
+        const lowerMessage = message.toLowerCase();
+
+        if (lowerMessage.includes('slot') || lowerMessage.includes('availab')) {
+            return 'Slot 1 & 2 are currently Available (Solar Powered). ☀️ Both slots support fast charging up to 150kW!';
+        } else if (lowerMessage.includes('tariff') || lowerMessage.includes('price') || lowerMessage.includes('cost')) {
+            return 'Current solar-powered charging rate: $0.15/kWh during peak hours (6am-10pm) and $0.08/kWh during off-peak hours. 🌞 100% renewable energy!';
+        } else if (lowerMessage.includes('fault') || lowerMessage.includes('problem') || lowerMessage.includes('issue') || lowerMessage.includes('broken')) {
+            return 'I\'m sorry to hear about the issue. Please describe the problem in detail and I\'ll escalate it to our technical team. For urgent matters, call 1-800-CHARGE-FLOW.';
+        } else if (lowerMessage.includes('help') || lowerMessage.includes('support')) {
+            return 'I\'m here to help! You can ask me about slot availability, charging tariffs, or report any faults. What would you like to know?';
+        } else if (lowerMessage.includes('hour') || lowerMessage.includes('time') || lowerMessage.includes('open')) {
+            return 'Our charging stations are available 24/7! Feel free to charge anytime. Solar-powered slots offer the best rates during daylight hours.';
+        } else if (lowerMessage.includes('reservation') || lowerMessage.includes('book')) {
+            return 'Currently, our slots operate on a first-come, first-served basis. However, you can check real-time availability through the main dashboard!';
+        } else if (lowerMessage.includes('thanks') || lowerMessage.includes('thank')) {
+            return 'You\'re welcome! Happy charging! ⚡ Let me know if you need anything else.';
+        } else {
+            return 'I understand you\'re asking about "' + message + '". For detailed assistance, please contact our support team at support@chargeflow.com or try one of the quick questions above!';
+        }
+    }
+
+    addBotMessage(text) {
+        const messageEl = document.createElement('div');
+        messageEl.className = 'chat-message';
+
+        const avatar = document.createElement('div');
+        avatar.className = 'message-avatar';
+        avatar.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="11" width="18" height="10" rx="2"></rect>
+                <circle cx="12" cy="5" r="2"></circle>
+                <path d="M12 7v4"></path>
+                <line x1="8" y1="16" x2="8" y2="16"></line>
+                <line x1="16" y1="16" x2="16" y2="16"></line>
+            </svg>
+        `;
+
+        const messageContent = document.createElement('div');
+        messageContent.className = 'message-content';
+
+        const bubble = document.createElement('div');
+        bubble.className = 'message-bubble';
+        bubble.textContent = text;
+
+        messageContent.appendChild(bubble);
+        messageEl.appendChild(avatar);
+        messageEl.appendChild(messageContent);
+
+        this.chatBody.appendChild(messageEl);
+        this.scrollToBottom();
+    }
+
+    addUserMessage(text) {
+        const messageEl = document.createElement('div');
+        messageEl.className = 'chat-message message-user';
+
+        const avatar = document.createElement('div');
+        avatar.className = 'message-avatar';
+        avatar.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+        `;
+
+        const messageContent = document.createElement('div');
+        messageContent.className = 'message-content';
+
+        const bubble = document.createElement('div');
+        bubble.className = 'message-bubble';
+        bubble.textContent = text;
+
+        messageContent.appendChild(bubble);
+        messageEl.appendChild(messageContent);
+        messageEl.appendChild(avatar);
+
+        this.chatBody.appendChild(messageEl);
+        this.scrollToBottom();
+    }
+
+    showTypingIndicator() {
+        const indicator = document.createElement('div');
+        indicator.className = 'chat-message';
+        indicator.id = 'typing-indicator';
+
+        const avatar = document.createElement('div');
+        avatar.className = 'message-avatar';
+        avatar.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="11" width="18" height="10" rx="2"></rect>
+                <circle cx="12" cy="5" r="2"></circle>
+                <path d="M12 7v4"></path>
+                <line x1="8" y1="16" x2="8" y2="16"></line>
+                <line x1="16" y1="16" x2="16" y2="16"></line>
+            </svg>
+        `;
+
+        const messageContent = document.createElement('div');
+        messageContent.className = 'message-content';
+
+        const typingDiv = document.createElement('div');
+        typingDiv.className = 'message-bubble';
+        typingDiv.innerHTML = `
+            <div class="typing-indicator">
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+            </div>
+        `;
+
+        messageContent.appendChild(typingDiv);
+        indicator.appendChild(avatar);
+        indicator.appendChild(messageContent);
+
+        this.chatBody.appendChild(indicator);
+        this.scrollToBottom();
+    }
+
+    hideTypingIndicator() {
+        const indicator = document.getElementById('typing-indicator');
+        if (indicator) {
+            indicator.remove();
+        }
+    }
+
+    scrollToBottom() {
+        this.chatBody.scrollTop = this.chatBody.scrollHeight;
+    }
+}
+
+// Initialize chatbot when DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        new Chatbot();
+    });
+} else {
+    new Chatbot();
+}
